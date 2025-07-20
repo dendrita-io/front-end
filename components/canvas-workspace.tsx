@@ -6,6 +6,8 @@ import { CanvasEditor } from "@/components/canvas-editor"
 import { AiAssistantSidebar } from "@/components/ai-assistant-sidebar"
 import { PersistentMenu } from "@/components/persistent-menu"
 import type { Note } from "@/types/note"
+import type { User } from "@supabase/supabase-js"
+import type { Profile } from "@/lib/supabase"
 
 interface CanvasWorkspaceProps {
   notes: Note[]
@@ -14,6 +16,8 @@ interface CanvasWorkspaceProps {
   onUpdateNote: (noteId: string, updates: Partial<Note>) => void
   onCreateNote: () => void
   onDeleteNote: (noteId: string) => void
+  user: User | null
+  profile: Profile | null
 }
 
 export function CanvasWorkspace({
@@ -23,6 +27,8 @@ export function CanvasWorkspace({
   onUpdateNote,
   onCreateNote,
   onDeleteNote,
+  user,
+  profile,
 }: CanvasWorkspaceProps) {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
@@ -81,6 +87,8 @@ export function CanvasWorkspace({
           currentIndex={currentNoteIndex}
           totalNotes={notes.length}
           onNavigate={navigateToNote}
+          user={user}
+          profile={profile}
         />
 
         <div className="flex-1 overflow-hidden">

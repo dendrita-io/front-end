@@ -4,15 +4,17 @@ import { useState } from "react"
 import { CanvasWorkspace } from "@/components/canvas-workspace"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useNotes } from "@/hooks/use-notes"
+import { useAuthContext } from "@/components/auth-provider"
 
 export default function NoteTakingApp() {
   const { notes, loading, createNote, updateNote, deleteNote } = useNotes()
   const [currentNoteIndex, setCurrentNoteIndex] = useState(0)
+  const { user, profile } = useAuthContext()
 
   const handleCreateNote = async () => {
     const newNote = await createNote()
     if (newNote) {
-      setCurrentNoteIndex(0) // Switch to the new note
+      setCurrentNoteIndex(0)
     }
   }
 
@@ -45,6 +47,8 @@ export default function NoteTakingApp() {
         onUpdateNote={updateNote}
         onCreateNote={handleCreateNote}
         onDeleteNote={handleDeleteNote}
+        user={user}
+        profile={profile}
       />
     </ProtectedRoute>
   )

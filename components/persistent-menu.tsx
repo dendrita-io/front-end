@@ -1,8 +1,21 @@
 "use client"
 
+import { ChevronLeft, ChevronRight, Plus, Trash2, PanelLeft, PanelRight, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Menu, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import type { Note } from "@/types/note"
+import type { User } from "@supabase/supabase-js"
+import type { Profile } from "@/lib/supabase"
+import { signOut } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
 
 interface PersistentMenuProps {
   currentNote: Note | undefined
@@ -15,6 +28,8 @@ interface PersistentMenuProps {
   currentIndex: number
   totalNotes: number
   onNavigate: (direction: "prev" | "next") => void
+  user: User | null
+  profile: Profile | null
 }
 
 export function PersistentMenu({
@@ -28,75 +43,98 @@ export function PersistentMenu({
   currentIndex,
   totalNotes,
   onNavigate,
+  user,
+  profile,
 }: PersistentMenuProps) {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    const { error } = await signOut()
+    if (!error) {
+      router.push("/auth")
+    } else {
+      console.error("Error logging out:", error.message)
+    }
+  }
+
   return (
-    <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
-      {/* Left Controls */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={onToggleLeftSidebar} className="p-2">
-          <Menu className="h-4 w-4" />
-        </Button>
+    <header className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-2 shadow-sm z-10">
+      <div className="flex items-center justify-between">
+        {/* Left Section */}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={onToggleLeftSidebar}>
+            <PanelLeft className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onCreateNote}>
+            <Plus className="h-5 w-5" />
+          </Button>
+          {currentNote && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDeleteNote(currentNote.id)}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
 
-        <div className="h-4 w-px bg-gray-300 mx-2" />
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onNavigate("prev")}
-          disabled={currentIndex === 0}
-          className="p-2"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-
-        <span className="text-sm text-gray-600 min-w-[80px] text-center">
-          {totalNotes > 0 ? `${currentIndex + 1} de ${totalNotes}` : "0 de 0"}
-        </span>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onNavigate("next")}
-          disabled={currentIndex === totalNotes - 1}
-          className="p-2"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Center Controls */}
-      <div className="flex items-center gap-2">
-        <Button onClick={onCreateNote} size="sm" className="bg-gray-900 hover:bg-gray-800">
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva nota
-        </Button>
-      </div>
-
-      {/* Right Controls */}
-      <div className="flex items-center gap-2">
-        {currentNote && (
+        {/* Center Section */}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => onNavigate("prev")} disabled={currentIndex <= 0}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <span className="text-sm text-gray-500 font-medium">
+            {totalNotes > 0 ? `${currentIndex + 1} / ${totalNotes}` : "0 / 0"}
+          </span>
           <Button
             variant="ghost"
-            size="sm"
-            onClick={() => onDeleteNote(currentNote.id)}
-            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+            size="icon"
+            onClick={() => onNavigate("next")}
+            disabled={currentIndex >= totalNotes - 1}
           >
-            <Trash2 className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5" />
           </Button>
-        )}
+        </div>
 
-        <div className="h-4 w-px bg-gray-300 mx-2" />
-
-        <Button
-          variant={rightSidebarOpen ? "default" : "ghost"}
-          size="sm"
-          onClick={onToggleRightSidebar}
-          className="flex items-center gap-2"
-        >
-          <img src="/dendrita-logo.svg" alt="Dendrita" className="w-4 h-4" />
-          Dendrita
-        </Button>
+        {/* Right Section */}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={onToggleRightSidebar}>
+            <PanelRight className="h-5 w-5" />
+          </Button>
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage
+                      src={profile?.avatar_url || "/placeholder-user.jpg"}
+                      alt={profile?.full_name || "User"}
+                    />
+                    <AvatarFallback>
+                      {profile?.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{profile?.full_name || "Usuario"}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Cerrar sesión</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
-    </div>
+    </header>
   )
 }
